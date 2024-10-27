@@ -31,12 +31,22 @@ class Models
         $this->database->setConnection($host, $user, $pwd, $charset);
     }
 
-    public function __construct($database = null)
+    public function nuevaConnectionPorIdentificador($dbIdentifier)
+    {
+        $this->database->setMultipleConnection($dbIdentifier);
+    }
+
+
+    public function __construct($dbIdentifier = null, $database = null)
     {
         if ($database !== null) {
             $this->database = $database;
         } else {
             $this->database = new Database();
+            // Si se proporciona un identificador, configura la conexión
+            if ($dbIdentifier !== null) {
+                $this->database->setMultipleConnection($dbIdentifier);
+            }
         }
     }
 

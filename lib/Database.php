@@ -31,6 +31,15 @@ class Database
         $this->charset = $charset;
     }
 
+    public function setMultipleConnection($dbIdentifier)
+    {
+        // Determina las constantes a utilizar según el identificador
+        $this->host = constant($dbIdentifier . '_HOST');
+        $this->user = constant($dbIdentifier . '_USER');
+        $this->pwd = constant($dbIdentifier . '_PWD');
+        $this->charset = constant('CHARSET'); // Puedes mantener CHARSET constante para todos
+    }
+
 
     function connect()
     {

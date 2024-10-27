@@ -9,6 +9,12 @@ define('USER', $_ENV['USER']);
 define('PWD', $_ENV['PWD']);
 define('CHARSET', $_ENV['CHARSET']);
 
+define('DB1_HOST', $_ENV['DB1_HOST']);
+define('DB1_USER', $_ENV['DB1_USER']);
+define('DB1_PWD', $_ENV['DB1_PWD']);
+define('DB1_CHARSET', $_ENV['DB1_CHARSET']);
+
+
 
 //conexion por defecto de la base de datos
 /*
