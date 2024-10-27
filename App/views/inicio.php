@@ -11,9 +11,6 @@ use lib\Route;
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
     <title>Area de Sistemas</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 </head>
 
 <body class="login-page" style="min-height: 496.8px;">
@@ -65,47 +62,13 @@ use lib\Route;
     </div>
 
     <script>
-        $(document).ready(function() {
-            $('#verificar_credenciales').on('submit', function(event) {
-                event.preventDefault();
-
-                var formData = $(this).serializeArray();
-
-                var dataObject = {};
-                $.each(formData, function(index, item) {
-                    dataObject[item.name] = item.value;
-                });
-                $.ajax({
-                    type: 'POST',
-                    url: "<?= Route::route('verificar_credenciales', 'POST') ?>",
-                    data: dataObject,
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            window.location.href = "<?= Route::route('dashboard') ?>";
-                        } else {
-                            showNotification('error', response.sms);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        showNotification('error', 'Se produjo un error al procesar su solicitud.');
-                    }
-                });
-
-            });
-
-            function showNotification(icon, message) {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: icon,
-                    title: message,
-                    showConfirmButton: false,
-                    timer: 5000
-                });
-            }
-        });
+        var verificarCredencialesUrl = "<?= Route::route('verificar_credenciales', 'POST') ?>";
+        var dashboardUrl = "<?= Route::route('dashboard') ?>";
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="<?= constant('URL') ?>/frontend/js/inicio.js"></script>
+
 </body>
 
 </html>

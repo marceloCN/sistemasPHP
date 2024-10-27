@@ -54,69 +54,22 @@ use lib\Route;
         {footer}
 
 
+        <script>
+            var mensajeError = <?= json_encode($_SESSION[constant('APP')]['mensaje'] ?? null); ?>;
+            var mensajeSuccess = <?= json_encode($_SESSION[constant('APP')]['success'] ?? null); ?>;
+            var logoutUrl = "<?= Route::route('logout') ?>"; // URL para logout
+
+            // Limpiar mensajes de sesión
+            <?php
+            unset($_SESSION[constant('APP')]['mensaje']);
+            unset($_SESSION[constant('APP')]['success']);
+            ?>
+        </script>
+        <script src="<?= constant('URL') ?>/frontend/js/app.js"></script>
+
     </div>
 
 
-
-    <?php if (isset($_SESSION[constant('APP')]['mensaje'])) { ?>
-        <script>
-            var mensajeError = '<?= $_SESSION[constant('APP')]['mensaje']; ?>';
-            $(document).ready(function() {
-                var Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 5000
-                });
-                Toast.fire({
-                    icon: 'error',
-                    title: mensajeError
-                });
-            });
-        </script>
-    <?php }
-    unset($_SESSION[constant('APP')]['mensaje']);
-    ?>
-
-    <?php if (isset($_SESSION[constant('APP')]['success'])) { ?>
-        <script>
-            var mensaje = '<?= $_SESSION[constant('APP')]['success']; ?>';
-            $(document).ready(function() {
-                var Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 5000
-                });
-                Toast.fire({
-                    icon: 'success',
-                    title: mensaje
-                });
-            });
-        </script>
-    <?php }
-    unset($_SESSION[constant('APP')]['success']);
-    ?>
-
-
-    <script>
-        var inactividadTimer;
-
-        function reiniciarTemporizador() {
-            clearTimeout(inactividadTimer);
-            inactividadTimer = setTimeout(function() {
-                window.location.href = "<?= Route::route('logout') ?>";
-            }, 20 * 60 * 1000); // 20 minutos en milisegundos
-        }
-
-        $(document).on('click keydown', function() {
-            reiniciarTemporizador();
-        });
-
-        $(document).ready(function() {
-            reiniciarTemporizador();
-        });
-    </script>
 
 </body>
 
