@@ -10,39 +10,35 @@ class SolicitudController extends Controller
 {
     public function recepcionada()
     {
-        return Route::view(
-            'templates.dashboard',
-            [
-                'head' => $this->head('Solicitud recepcionada', 'Contenido solicitud de codigos recepcionados para sistemas'), //aqui es donde varia
-                'link' => $this->getLinkSrc('link'),
-                'src' => $this->getLinkSrc('src'),
-                'nav' => $this->getNav('templates.nav'),
-                'aside' => $this->getNav('templates.aside'),
-                'title' => 'Solicitudes Recepcionadas',
-                'session' => 'Solicitud recepcionada',
-                'content' => $this->getNav('backend.solicitud_recepcionada'), //aqui es donde varia siempre
-                'footer' => $this->getNav('templates.footer')
-            ]
-        );
+        return Route::view('templates.dashboard')
+            ->with('head', $this->head('Solicitud recepcionada', 'Contenido solicitud de codigos recepcionados para sistemas'))
+            ->with('link', $this->getLinkSrc('link'))
+            ->with('src', $this->getLinkSrc('src'))
+            ->with('nav', $this->getNav('templates.nav'))
+            ->with('aside', $this->getNav('templates.aside'))
+            ->with('title', 'Solicitudes Recepcionadas')
+            ->with('session', 'Solicitud recepcionada')
+            ->with('content', $this->getNav('backend.solicitud_recepcionada'))
+            ->with('footer', $this->getNav('templates.footer'))
+            ->render();
     }
+
 
     public function no_recepcionada()
     {
-        return Route::view(
-            'templates.dashboard',
-            [
-                'head' => $this->head('Solicitud no recepcionada', 'Contenido de solicitud de codigos que no fueron recepcionados a sistemas, pero si tienen algo que ver con el mismo'), //aqui es donde varia
-                'link' => $this->getLinkSrc('link'),
-                'src' => $this->getLinkSrc('src'),
-                'nav' => $this->getNav('templates.nav'),
-                'aside' => $this->getNav('templates.aside'),
-                'title' => 'Solicitudes No Recepcionadas',
-                'session' => 'Solicitud no recepcionada',
-                'content' => $this->getNav('backend.solicitud_no_recepcionada'), //aqui es donde varia siempre
-                'footer' => $this->getNav('templates.footer')
-            ]
-        );
+        return Route::view('templates.dashboard')
+            ->with('head', $this->head('Solicitud no recepcionada', 'Contenido de solicitud de codigos que no fueron recepcionados a sistemas, pero si tienen algo que ver con el mismo'))
+            ->with('link', $this->getLinkSrc('link'))
+            ->with('src', $this->getLinkSrc('src'))
+            ->with('nav', $this->getNav('templates.nav'))
+            ->with('aside', $this->getNav('templates.aside'))
+            ->with('title', 'Solicitudes No Recepcionadas')
+            ->with('session', 'Solicitud no recepcionada')
+            ->with('content', $this->getNav('backend.solicitud_no_recepcionada'))
+            ->with('footer', $this->getNav('templates.footer'))
+            ->render();
     }
+
 
     public function personal_por_direccion($id)
     {

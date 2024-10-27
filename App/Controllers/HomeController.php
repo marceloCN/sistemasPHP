@@ -53,21 +53,20 @@ class HomeController extends Controller
 
     public function dashboard()
     {
-        return Route::view(
-            'templates.dashboard',
-            [
-                'head' => $this->head('Entorno de Trabajo', 'Contenido de la pagina principal'), //aqui es donde varia
-                'link' => $this->getLinkSrc('link'),
-                'src' => $this->getLinkSrc('src'),
-                'nav' => $this->getNav('templates.nav'),
-                'aside' => $this->getNav('templates.aside'),
-                'title' => 'Area de Trabajo',
-                'session' => 'Area de Trabajo',
-                'content' => $this->getNav('backend.content_index'), //aqui es donde varia siempre
-                'footer' => $this->getNav('templates.footer')
-            ]
-        );
+        return Route::view('templates.dashboard') // Asegúrate de que este archivo exista
+            ->with('head', $this->head('Entorno de Trabajo', 'Contenido de la pagina principal'))
+            ->with('link', $this->getLinkSrc('link'))
+            ->with('src', $this->getLinkSrc('src'))
+            ->with('nav', $this->getNav('templates.nav'))
+            ->with('aside', $this->getNav('templates.aside'))
+            ->with('title', 'Area de Trabajo')
+            ->with('session', 'Area de Trabajo')
+            ->with('content', $this->getNav('backend.content_index'))
+            ->with('footer', $this->getNav('templates.footer'))
+            ->render();
     }
+
+
 
     public function logout()
     {

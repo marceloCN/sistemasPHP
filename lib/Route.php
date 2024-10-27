@@ -4,14 +4,13 @@ namespace lib;
 
 use Closure;
 
-use lib\Error;
-
 
 class Route
 {
     private static $routes = [];
     private static $lastRoute = null;  // Para almacenar la última ruta registrada
     private static $currentController = null; // Para almacenar el controlador actual
+    private static $currentPrefix = ''; // Para almacenar el prefijo actual
 
     public static function get($uri, $callback)
     {
@@ -23,11 +22,24 @@ class Route
         return self::registerRoute('POST', $uri, $callback);
     }
 
+    public static function prefix($prefix)
+    {
+        // Establece el prefijo actual, eliminando las barras iniciales y finales
+        self::$currentPrefix = trim($prefix, "/");
+        return new static(); // Devuelve una instancia para el encadenamiento de métodos
+    }
+
+
     private static function registerRoute($method, $uri, $callback)
     {
         // Si hay un controlador asignado, se agrega al callback
         if (self::$currentController) {
             $callback = [self::$currentController, $callback];
+        }
+
+        // Agregar el prefijo a la URI si existe
+        if (!empty(self::$currentPrefix)) {
+            $uri = self::$currentPrefix . '/' . $uri;
         }
 
         $uri = trim($uri, "/");
@@ -88,6 +100,7 @@ class Route
 
         // Resetea el controlador actual después de registrar las rutas del grupo
         self::$currentController = null;
+        self::$currentPrefix = ''; // Resetea el prefijo
     }
 
     // Asignar middleware a una ruta específica
@@ -158,7 +171,6 @@ class Route
         return true;
     }
 
-
     public static function route($name, $expectedMethod = null)
     {
 
@@ -224,29 +236,16 @@ class Route
             $uri = substr($uri, 0, strpos($uri, '?'));
         }
 
-        //verifica si la url empieza con resources
-        if (strpos($uri, 'resources') === 0) {
-            return self::serveStaticFile($uri);
-        }
-
-        // Verifica si la URI empieza con 'backend' o 'frontend o 'librery
-        if (strpos($uri, 'backend') === 0 || strpos($uri, 'frontend') === 0 || strpos($uri, 'librery') === 0) {
-            //sirve para poder encontrar las librerias que tienes guardado
-            return self::serveStaticFileBackend($uri);
+        // Intenta servir archivos estáticos de manera dinámica
+        if (self::serveStaticIfMatched($uri)) {
+            return; // Si se sirvió un archivo, detener la ejecución
         }
 
         foreach (self::$routes[$method] as $route => $routeInfo) {
             $callback = $routeInfo['callback'];
-            /*
-            if (strpos($route, ':') !== false) {
-                $route = preg_replace('#:[a-zA-Z0-9]+#', '([a-zA-Z0-9]+)', $route);
-            }*/
             $route = preg_replace('#{[a-zA-Z0-9_]+}#', '([^/]+)', $route);
             if (preg_match("#^$route$#", $uri, $matches)) {
-
                 $params = array_slice($matches, 1);
-
-                /************************************************************************* */
                 // Ejecutar middleware si existe
                 if (isset($routeInfo['middleware'])) {
                     if (self::executeMiddleware($routeInfo['middleware'], $queryParams) === false) {
@@ -256,24 +255,15 @@ class Route
                     }
                 }
                 $_SESSION['previous_url'] = self::getCurrentUrl();
-                /************************************************************************* */
-
                 if (is_callable($callback)) {
-                    if (is_array($callback) && isset($callback[0]) && isset($callback[1])) {
-                        $controller = new $callback[0];
-                        $response = $controller->{$callback[1]}(...$params);
-                    } else {
-                        $response = $callback(...$params);
-                    }
+                    $response = is_array($callback) ? (new $callback[0])->{$callback[1]}(...$params) : $callback(...$params);
                     if (is_object($response)) {
                         header('Content-Type: application/json');
-                        return json_encode($response);
+                        echo json_encode($response);
                     } else {
                         echo $response;
                     }
                     return;
-                } else { //no es una funcion callback
-                    //require_once "../resources/views/error/not_found.php";
                 }
             }
         }
@@ -292,119 +282,24 @@ class Route
         exit();
     }
 
-
-    private static function serveStaticFile($uri)
+    private static function serveStaticIfMatched($uri)
     {
-        // Construir la ruta completa al archivo estático
-        $filePath = './../' . $uri;
+        $baseDirs = MimeType::getBaseDirs(); // Obtiene los baseDirs desde MimeType
 
-        // Verificar si el archivo existe
-        if (file_exists($filePath)) {
-            // Si el archivo es un archivo PHP, incluirlo y detener la ejecución
-            if (pathinfo($filePath, PATHINFO_EXTENSION) === 'php') {
-                include $filePath;
-                return true;
-            }
-
-            // Determinar el tipo MIME del archivo
-            $contentType = mime_content_type($filePath);
-
-            // Establecer el encabezado Content-Type
-            header("Content-Type: $contentType");
-
-            // Servir el archivo estático y detener la ejecución
-            readfile($filePath);
-            return true;
-        } else {
-            // Si el archivo no existe, devolver un 404 Not Found
-            http_response_code(404);
-            echo '404 Not Found';
-            return false;
-        }
-    }
-
-    private static function serveStaticFileBackend($uri)
-    {
-
-        // Definir las rutas base según el prefijo de la URI
-        $baseDirs = [
-            'backend' => __DIR__ . '/../lib/src/public/',
-            'frontend' => __DIR__ . '/../App/public/',
-            'librery' => __DIR__ . '/../vendor/'
-        ];
-        // Identificar el prefijo de la URI (backend, frontend, vendor)
-        foreach ($baseDirs as $key => $baseDir) {
-            if (strpos($uri, $key) === 0) {
-                // Remover el prefijo de la URI para obtener la parte relativa
-                $relativeUri = preg_replace("#^$key/#", '', $uri);
-                // Construir la ruta completa al archivo
-                $filePath = realpath($baseDir . $relativeUri);
-                // Verificar si el archivo existe
-                if (file_exists($filePath)) {
-                    $ext = pathinfo($filePath, PATHINFO_EXTENSION);
-                    $contentType = self::getMimeType($ext);
-                    header("Content-Type: $contentType");
-                    readfile($filePath);
-                    return true;
-                }
+        foreach ($baseDirs as $prefix => $baseDir) {
+            if (strpos($uri, $prefix) === 0) {
+                // Si coincide con un prefijo, servir el archivo correspondiente
+                return MimeType::serveStaticFile($uri);
             }
         }
 
-        // Si no se encuentra el archivo, devolver 404
-        return self::handleNotFound();
+        return false; // Si no coincide con ningún prefijo
     }
 
-    // Método para obtener el tipo MIME basado en la extensión
-    private static function getMimeType($extension)
-    {
-        $mimeTypes = [
-            'css' => 'text/css',
-            'js' => 'application/javascript',
-            'json' => 'application/json',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'gif' => 'image/gif',
-            'html' => 'text/html',
-            'txt' => 'text/plain',
-            // Agrega más tipos MIME según sea necesario
-        ];
 
-        return $mimeTypes[$extension] ?? 'application/octet-stream'; // Valor por defecto si no se encuentra
-    }
 
-    private static function handleNotFound()
+    public static function view($viewName)
     {
-        http_response_code(404);
-        echo '404 Not Found';
-        return false;
-    }
-
-    public static function view($viewName, $data = [])
-    {
-        $viewPath = __DIR__ . '/../App/views/' . str_replace('.', '/', $viewName) . '.php';
-        if (file_exists($viewPath)) {
-            ob_start(); // Inicia el buffer de salida
-            include $viewPath; // Incluye la vista
-            $content = ob_get_clean();
-            foreach ($data as $key => $value) {
-                $content = str_replace("{{$key}}", $value, $content);
-            }
-            return $content; // Devuelve el contenido del buffer
-        }
-        //si no existe la ruta, debo encontrar en otro lugar
-        $errorFilePath = __DIR__ . "/../lib/error/error404.php";
-        $data = ['route' => $viewName];
-        if (file_exists($errorFilePath)) {
-            ob_start();
-            include $errorFilePath;
-            $errorContent = ob_get_clean();
-            foreach ($data as $key => $value) {
-                $errorContent = str_replace("{{$key}}", $value, $errorContent);
-            }
-            return ($errorContent);
-        } else {
-            return "Error: La vista solicitada '$route' no se encuentra y tampoco se encontró la página de error.";
-        }
+        return new View($viewName); // Devolver una nueva instancia de View
     }
 }

@@ -9,31 +9,44 @@ use App\Controllers\SolicitudController;
 use App\Controllers\Middlewares\AuthMiddleware;
 use App\Controllers\Middlewares\PostMiddleware;
 
+use App\Models\Usuarios;
+
 Route::get('', function () {
-    return Route::view('inicio');
-    //return Route::redirect('login_acceso');
+    return Route::view('inicio')->render();
 })->name('inicio')->middleware([AuthMiddleware::class, ['estasLogueado']]);
+
+Route::get('inicio/{id}', function (Usuarios $id) {
+    //$usuarios = new Usuarios();
+    //$usuarios = $usuarios->select(['*'], ['id' => $id], []);
+    //var_dump($usuarios);
+});
 
 Route::controller(HomeController::class)->group(function () {
     Route::post('verificar', 'verificar_credencial')->name('verificar_credenciales')->middleware([PostMiddleware::class, ['isPost']]);
     Route::get('Area-de-trabajo', 'dashboard')->name('dashboard')->middleware([AuthMiddleware::class, ['auth']]);
     Route::get('/logout', 'logout')->name('logout');
 });
-Route::controller(SolicitudController::class)->group(function () {
-    Route::get('Area-de-trabajo/Solicitudes-recepcionadas', 'recepcionada')->name('solicitud_recepcionada_listar')->middleware([AuthMiddleware::class, ['auth']]);
-    Route::get('Area-de-trabajo/Solicitudes-no-recepcionadas', 'no_recepcionada')->name('solicitud_no_recepcionada_listar')->middleware([AuthMiddleware::class, ['auth']]);
-    Route::post('Area-de-trabajo/Solicitudes-recepcionadas/responder-solicitud', 'responder_solicitud')->name('responder_solicitud')->middleware([PostMiddleware::class, ['isPost']]);
-    Route::get('Area-de-trabajo/Solicitudes-recepcionadas/personal_por_direccion/{id}', 'personal_por_direccion')->name('personal_por_direccion');
+
+Route::prefix('Area-de-trabajo')->controller(SolicitudController::class)->group(function () {
+    // Rutas para Solicitudes no recepcionadas
+    Route::get('Solicitudes-no-recepcionadas', 'no_recepcionada')->name('solicitud_no_recepcionada_listar')->middleware([AuthMiddleware::class, ['auth']]);
+
+    // Agrupación de rutas para Solicitudes recepcionadas
+    Route::prefix('Solicitudes-recepcionadas')->group(function () {
+        Route::get('/', 'recepcionada')->name('solicitud_recepcionada_listar')->middleware([AuthMiddleware::class, ['auth']]);
+        Route::post('responder-solicitud', 'responder_solicitud')->name('responder_solicitud')->middleware([PostMiddleware::class, ['isPost']]);
+        Route::get('personal_por_direccion/{id}', 'personal_por_direccion')->name('personal_por_direccion');
+    });
 });
 
-Route::controller(SoporteController::class)->group(function () {
-    Route::get('Area-de-trabajo/trabajos-soporte', 'soporte')->name('listar_soporte')->middleware([AuthMiddleware::class, ['auth']]);
+
+Route::prefix('Area-de-trabajo')->controller(SoporteController::class)->group(function () {
+    Route::get('trabajos-soporte', 'soporte')->name('listar_soporte')->middleware([AuthMiddleware::class, ['auth']]);
 });
 
-Route::controller(SistemaController::class)->group(function () {
-    Route::get('Area-de-trabajo/trabajos-sistema', 'sistema')->name('listar_sistema')->middleware([AuthMiddleware::class, ['auth']]);
+Route::prefix('Area-de-trabajo')->controller(SistemaController::class)->group(function () {
+    Route::get('trabajos-sistema', 'sistema')->name('listar_sistema')->middleware([AuthMiddleware::class, ['auth']]);
 });
-
 
 
 
