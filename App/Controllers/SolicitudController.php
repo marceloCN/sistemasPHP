@@ -10,7 +10,7 @@ class SolicitudController extends Controller
 {
     public function recepcionada()
     {
-        return $this->view(
+        return Route::view(
             'templates.dashboard',
             [
                 'head' => $this->head('Solicitud recepcionada', 'Contenido solicitud de codigos recepcionados para sistemas'), //aqui es donde varia
@@ -28,7 +28,7 @@ class SolicitudController extends Controller
 
     public function no_recepcionada()
     {
-        return $this->view(
+        return Route::view(
             'templates.dashboard',
             [
                 'head' => $this->head('Solicitud no recepcionada', 'Contenido de solicitud de codigos que no fueron recepcionados a sistemas, pero si tienen algo que ver con el mismo'), //aqui es donde varia

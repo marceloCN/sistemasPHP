@@ -78,7 +78,7 @@ class Controller extends Helpers
             $date = ob_get_clean();
             return $date;
         } else {
-            return $this->notFound($route, 2);
+            return "vista no encontrada";
         }
     }
 

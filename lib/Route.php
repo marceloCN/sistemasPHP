@@ -287,7 +287,6 @@ class Route
         if (strpos($to, '/') !== 0 && self::route($to)) {
             $to = self::route($to);
         }
-
         // Redirigir a la URL o ruta dada
         header('Location: ' . $to, true, $statusCode);
         exit();
@@ -381,14 +380,31 @@ class Route
         return false;
     }
 
-    public static function view($viewName)
+    public static function view($viewName, $data = [])
     {
         $viewPath = __DIR__ . '/../App/views/' . str_replace('.', '/', $viewName) . '.php';
         if (file_exists($viewPath)) {
             ob_start(); // Inicia el buffer de salida
             include $viewPath; // Incluye la vista
-            return ob_get_clean(); // Devuelve el contenido del buffer
+            $content = ob_get_clean();
+            foreach ($data as $key => $value) {
+                $content = str_replace("{{$key}}", $value, $content);
+            }
+            return $content; // Devuelve el contenido del buffer
         }
-        return "Vista no encontrada"; // Manejo de errores
+        //si no existe la ruta, debo encontrar en otro lugar
+        $errorFilePath = __DIR__ . "/../lib/error/error404.php";
+        $data = ['route' => $viewName];
+        if (file_exists($errorFilePath)) {
+            ob_start();
+            include $errorFilePath;
+            $errorContent = ob_get_clean();
+            foreach ($data as $key => $value) {
+                $errorContent = str_replace("{{$key}}", $value, $errorContent);
+            }
+            return ($errorContent);
+        } else {
+            return "Error: La vista solicitada '$route' no se encuentra y tampoco se encontró la página de error.";
+        }
     }
 }

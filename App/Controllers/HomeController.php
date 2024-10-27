@@ -9,12 +9,6 @@ use App\Models\Cargos;
 
 class HomeController extends Controller
 {
-    //para cada view debes ingresar el head, link, y src
-    public function index()
-    {
-        return $this->view('login');
-    }
-
     public function verificar_credencial()
     {
         if (!(isset($_POST["username"]) && isset($_POST["password"]))) {
@@ -59,7 +53,7 @@ class HomeController extends Controller
 
     public function dashboard()
     {
-        return $this->view(
+        return Route::view(
             'templates.dashboard',
             [
                 'head' => $this->head('Entorno de Trabajo', 'Contenido de la pagina principal'), //aqui es donde varia
