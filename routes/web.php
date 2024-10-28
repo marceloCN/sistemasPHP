@@ -8,18 +8,24 @@ use App\Controllers\SolicitudController;
 
 use App\Controllers\Middlewares\AuthMiddleware;
 use App\Controllers\Middlewares\PostMiddleware;
+use lib\Helpers;
 
-use App\Models\Usuarios;
 
 Route::get('', function () {
     return Route::view('inicio')->render();
 })->name('inicio')->middleware([AuthMiddleware::class, ['estasLogueado']]);
 
-Route::get('inicio/{id}', function (Usuarios $id) {
-    //$usuarios = new Usuarios();
-    //$usuarios = $usuarios->select(['*'], ['id' => $id], []);
-    //var_dump($usuarios);
+
+Route::get('enviar', function () {
+    $url = "https://nextcloud.gamlaguardia.com.bo/";
+    $usuario = 'sistemas';
+    $contraseña = 'n3gr4c1o@123';
+    $carpetaLocal = __DIR__ . '/../../'; // Ruta a la carpeta local que contiene los archivos
+    $rutaRemota = 'pruebas/sistemas'; // Ruta en el servidor WebDAV
+
+    Helpers::subirCarpetaNextcloud($url, $usuario, $contraseña, $carpetaLocal, $rutaRemota);
 });
+
 
 Route::controller(HomeController::class)->group(function () {
     Route::post('verificar', 'verificar_credencial')->name('verificar_credenciales')->middleware([PostMiddleware::class, ['isPost']]);

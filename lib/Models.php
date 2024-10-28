@@ -9,15 +9,6 @@ use Exception;
 class Models
 {
 
-    /*
-    $resultado =$users->insert(['nombre' => 'Juan', 'apellido' => 'Cruz de nogales']);
-    $resultado = $users->update(['apellido' => 'Nogales Panoso'], ['id' => 56]);
-    $users->delete(['id' => 52]);
-    $resultado = $users->select(['*'], [], []); //mostrar todos los registros de la tabla
-    var_dump($resultado);
-    var_dump($users->count("*", [])); //contar todos los elementos de la tabla
-            
-    */
     protected $database;
     protected $query;
     protected $param = [];
@@ -26,29 +17,17 @@ class Models
     protected $tablaBD;
     protected $vistaBD;
 
-    public function nuevaConnection($host, $user, $pwd, $charset)
-    {
-        $this->database->setConnection($host, $user, $pwd, $charset);
-    }
-
     public function nuevaConnectionPorIdentificador($dbIdentifier)
     {
         $this->database->setMultipleConnection($dbIdentifier);
     }
 
-
-    public function __construct($dbIdentifier = null, $database = null)
+    public function __construct($dbIdentifier = null, Database $database = null)
     {
-        if ($database !== null) {
-            $this->database = $database;
-        } else {
-            $this->database = new Database();
-            // Si se proporciona un identificador, configura la conexión
-            if ($dbIdentifier !== null) {
-                $this->database->setMultipleConnection($dbIdentifier);
-            }
-        }
+        // Si se proporciona una instancia de Database, la usamos
+        $this->database = $database ?? new Database($dbIdentifier);
     }
+
 
     public function setDatabase($database)
     {

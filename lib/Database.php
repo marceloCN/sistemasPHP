@@ -5,8 +5,6 @@ namespace lib;
 use PDO;
 use PDOException;
 
-require_once '../config/config.php'; //recarga la configuracion de la base de datos
-
 class Database
 {
     private $host;
@@ -14,21 +12,16 @@ class Database
     private $pwd;
     private $charset;
 
-    public function __construct()
+    public function __construct($dbIdentifier = null)
     {
-        $this->host = constant('HOST');
-        $this->user = constant('USER');
-        $this->pwd = constant('PWD');
-        $this->charset = constant('CHARSET');
-    }
-
-
-    public function setConnection($host, $user, $pwd, $charset)
-    {
-        $this->host = $host;
-        $this->user = $user;
-        $this->pwd = $pwd;
-        $this->charset = $charset;
+        if ($dbIdentifier) {
+            $this->setMultipleConnection($dbIdentifier);
+        } else {
+            $this->host = constant('HOST');
+            $this->user = constant('USER');
+            $this->pwd = constant('PWD');
+            $this->charset = constant('CHARSET');
+        }
     }
 
     public function setMultipleConnection($dbIdentifier)

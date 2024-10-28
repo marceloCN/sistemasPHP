@@ -1,0 +1,23 @@
+# Configuración de la aplicación
+URL=http://sistemas.test
+APP=sistemas
+
+# Configuración de la base de datos por defecto
+HOST=mysql:host=localhost;dbname=gam;port=3306
+USER=root
+PWD=456123
+CHARSET=utf8mb4
+
+#configuracion de la basae de datos 1
+DB1_HOST=mysql:host=localhost;dbname=gam;port=3306
+DB1_USER=root
+DB1_PWD=456123
+DB1_CHARSET=utf8mb4
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=cruznogalesmarcelo@gmail.com
+MAIL_PASSWORD=70005937MCN
+MAIL_ENCRYPTION=tls
+

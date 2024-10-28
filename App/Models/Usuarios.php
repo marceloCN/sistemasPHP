@@ -10,7 +10,7 @@ class Usuarios extends Models
 {
     public function __construct()
     {
-        parent::__construct('DB1');
+        parent::__construct();
         $this->tablaBD = 'usuarios';
         $this->param['id'] = PDO::PARAM_STR;
         $this->long['id'] = 0;

@@ -296,8 +296,6 @@ class Route
         return false; // Si no coincide con ningún prefijo
     }
 
-
-
     public static function view($viewName)
     {
         return new View($viewName); // Devolver una nueva instancia de View
