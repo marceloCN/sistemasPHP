@@ -16,8 +16,6 @@ Route::get('', function () {
 })->name('inicio')->middleware([AuthMiddleware::class, ['estasLogueado']]);
 
 
-/*
-//para enviar un archivo a nextcloud
 Route::get('enviar', function () {
     $url = "https://nextcloud.gamlaguardia.com.bo/";
     $usuario = 'sistemas';
@@ -28,44 +26,6 @@ Route::get('enviar', function () {
     Helpers::subirArchivoNextcloud($url, $usuario, $contraseña, $archivoLocal, $rutaRemota);
 });
 
-
-Route::get('enviar', function () {
-    $url = "https://nextcloud.gamlaguardia.com.bo/";
-    $usuario = 'sistemas';
-    $contraseña = 'n3gr4c1o@123';
-    $rutaRemota = '2022'; // Ruta en el servidor WebDAV
-    Helpers::listarArchivosYCarpetas($url, $usuario, $contraseña, $rutaRemota); //me retorna en array
-});
-
-Route::get('enviar', function () {
-    $url = "https://nextcloud.gamlaguardia.com.bo/";
-    $usuario = 'sistemas';
-    $contraseña = 'n3gr4c1o@123';
-    $rutaRemota = 'pruebas/sistemas/web.php'; // Ruta en el servidor WebDAV
-    Helpers::descargarArchivo($url, $usuario, $contraseña, $rutaRemota);
-});
-
-Route::get('enviar', function () {
-    $url = "https://nextcloud.gamlaguardia.com.bo/";
-    $usuario = 'sistemas';
-    $contraseña = 'n3gr4c1o@123';
-    $rutaRemota = 'pruebas/sistemas'; // Ruta en el servidor WebDAV
-    Helpers::descargarCarpeta($url, $usuario, $contraseña, $rutaRemota);
-});
-*/
-
-
-
-Route::get('verificar', function () {
-
-    $tempFile = tempnam(sys_get_temp_dir(), 'test');
-    if ($tempFile) {
-        echo "Se pudo crear el archivo temporal: $tempFile";
-        unlink($tempFile); // Borra el archivo temporal
-    } else {
-        echo "No se pudo crear el archivo temporal.";
-    }
-});
 
 Route::controller(HomeController::class)->group(function () {
     Route::post('verificar', 'verificar_credencial')->name('verificar_credenciales')->middleware([PostMiddleware::class, ['isPost']]);

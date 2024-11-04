@@ -17,7 +17,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 //para subir archivo webDav
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
-
+use PharData;
 
 class Helpers
 {
@@ -137,6 +137,179 @@ class Helpers
         exit; // Terminar el script
     }
 
+    static function listarArchivosYCarpetas($url, $usuario, $contraseña, $rutaRemota)
+    {
+        // Inicializa cURL
+        $ch = curl_init();
+        $uploadUrl = rtrim($url, '/') . '/remote.php/dav/files/' . $usuario . '/' . ltrim($rutaRemota, '/');
+
+        // Configura las opciones de cURL
+        curl_setopt($ch, CURLOPT_URL, $uploadUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERPWD, "$usuario:$contraseña");
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PROPFIND");
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Depth: 1',
+            'Content-Type: text/xml; charset=utf-8',
+        ]);
+
+        // Ejecuta la solicitud cURL
+        $response = curl_exec($ch);
+
+        // Verifica si hay errores
+        if ($response === false) {
+            header('Content-Type: application/json');
+            echo json_encode(["error" => "Error en cURL: " . curl_error($ch)]);
+            curl_close($ch);
+            return;
+        }
+
+        curl_close($ch);
+
+        // Intentar cargar el XML manualmente
+        $files = [];
+        preg_match_all('/<d:response>(.*?)<\/d:response>/s', $response, $matches);
+
+        foreach ($matches[1] as $index => $match) {
+            // Omitir el primer índice (que generalmente es la raíz)
+            if ($index === 0) {
+                continue;
+            }
+
+            preg_match('/<d:href>(.*?)<\/d:href>/', $match, $href);
+            preg_match('/<d:collection\/>/', $match, $isFolder);
+
+            // Extraer solo el nombre del archivo o carpeta
+            $name = basename(isset($href[1]) ? $href[1] : '');
+
+            $files[] = [
+                'name' => $name,
+                'href' => isset($href[1]) ? $href[1] : '',
+                'resourcetype' => !empty($isFolder) ? 'folder' : 'file',
+            ];
+        }
+
+        return $files;
+    }
+
+    static function descargarCarpeta($url, $usuario, $contraseña, $rutaCarpeta)
+    {
+        // Obtener la lista de archivos y carpetas
+        $files = self::listarArchivosYCarpetas($url, $usuario, $contraseña, $rutaCarpeta);
+
+        // Crear un archivo TAR temporal
+        $nombreTar = basename($rutaCarpeta) . '.tar';
+        $rutaTempTar = tempnam(sys_get_temp_dir(), $nombreTar);
+
+        // Crear el archivo TAR
+        try {
+            $tar = new PharData($rutaTempTar);
+        } catch (Exception $e) {
+            echo "Error al crear el archivo TAR: " . $e->getMessage();
+            return;
+        }
+
+        // Iterar sobre los archivos y añadirlos al TAR
+        foreach ($files as $file) {
+            if ($file['resourcetype'] === 'file') {
+                $fileUrl = rtrim($url, '/') . $file['href'];
+
+                // Inicializa cURL para descargar el archivo
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $fileUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_USERPWD, "$usuario:$contraseña");
+                curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+
+                // Ejecuta la solicitud cURL para descargar el archivo
+                $fileContent = curl_exec($ch);
+                if ($fileContent === false) {
+                    echo "Error al descargar el archivo: " . curl_error($ch);
+                    curl_close($ch);
+                    continue; // Continúa con el siguiente archivo
+                }
+                curl_close($ch);
+
+                // Añadir el archivo al TAR
+                try {
+                    $tar->addFromString($file['name'], $fileContent);
+                } catch (Exception $e) {
+                    echo "Error al agregar el archivo al TAR: " . $e->getMessage();
+                }
+            }
+        }
+
+        // Configura las cabeceras para la descarga del TAR
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/x-tar');
+        header('Content-Disposition: attachment; filename="' . $nombreTar . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($rutaTempTar));
+
+        // Envía el archivo TAR al navegador
+        readfile($rutaTempTar);
+
+        // Elimina el archivo TAR temporal
+        unlink($rutaTempTar);
+        exit;
+    }
+
+
+
+
+
+
+    static function descargarArchivo($url, $usuario, $contraseña, $rutaRemota)
+    {
+        // Inicializa cURL
+        $ch = curl_init();
+        $downloadUrl = rtrim($url, '/') . '/remote.php/dav/files/' . $usuario . '/' . ltrim($rutaRemota, '/');
+
+        // Configura las opciones de cURL
+        curl_setopt($ch, CURLOPT_URL, $downloadUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERPWD, "$usuario:$contraseña");
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+
+        // Ejecuta la solicitud cURL
+        $response = curl_exec($ch);
+
+        // Verifica si hay errores
+        if ($response === false) {
+            echo "Error en cURL: " . curl_error($ch);
+            curl_close($ch);
+            return;
+        }
+
+        // Verifica el código de estado HTTP
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            echo "Error al descargar el archivo. Código HTTP: $httpCode";
+            return;
+        }
+
+        // Extrae el nombre del archivo de la ruta remota
+        $nombreArchivo = basename($rutaRemota);
+
+        // Configura las cabeceras para la descarga
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . strlen($response));
+
+        // Envía el contenido del archivo al navegador
+        echo $response;
+        exit;
+    }
+
     public static function subirArchivoNextcloud($url, $usuario, $contraseña, $archivoLocal, $rutaRemota)
     {
         // Comprobar si el archivo local existe
@@ -144,14 +317,26 @@ class Helpers
             echo "El archivo local no existe: $archivoLocal\n";
             return;
         }
-
         // Inicializar cURL
         $ch = curl_init();
 
+        // Verificar y crear directorios necesarios
+        $partesRuta = explode('/', trim($rutaRemota, '/'));
+        $rutaActual = '';
+
+        foreach ($partesRuta as $parte) {
+            $rutaActual .= '/' . $parte;
+            if (!self::verificarExistenciaDirectorioNextcloud($url, $usuario, $contraseña, $rutaActual)) {
+                self::crearDirectorioNextcloud($url, $usuario, $contraseña, $rutaActual);
+            }
+        }
+
+        // Obtener el nombre del archivo
+        $nombreArchivo = basename($archivoLocal);
 
         // Construir la URL completa para la carga
-        $uploadUrl = rtrim($url, '/') . '/remote.php/dav/files/' . $usuario . '/' . ltrim($rutaRemota, '/');
-        var_dump($uploadUrl);
+        $uploadUrl = rtrim($url, '/') . '/remote.php/dav/files/' . $usuario . '/' . rtrim($rutaRemota, '/') . '/' . $nombreArchivo;
+
 
         curl_setopt($ch, CURLOPT_URL, $uploadUrl);
         curl_setopt($ch, CURLOPT_USERPWD, "$usuario:$contraseña");
@@ -167,15 +352,14 @@ class Helpers
         // Configurar cURL para subir el archivo
         curl_setopt($ch, CURLOPT_INFILE, $fh);
         curl_setopt($ch, CURLOPT_INFILESIZE, filesize($archivoLocal));
+        curl_setopt($ch, CURLOPT_VERBOSE, true); // Habilitar modo de depuración
 
         // Ejecutar la solicitud cURL
         $response = curl_exec($ch);
 
         // Comprobar si hubo un error
         if ($response === false) {
-            echo 'Error al enviar el archivo: ' . curl_error($ch) . "\n";
-        } else {
-            echo "Archivo enviado con éxito a $rutaRemota.\n";
+            echo "Error en cURL: " . curl_error($ch) . "\n";
         }
 
         // Cerrar el archivo y la sesión cURL
@@ -183,37 +367,25 @@ class Helpers
         curl_close($ch);
     }
 
-    public static function subirCarpetaNextcloud($url, $usuario, $contraseña, $carpetaLocal, $rutaRemota)
+    public static function verificarExistenciaDirectorioNextcloud($url, $usuario, $contraseña, $rutaRemota)
     {
-        // Verificar si la carpeta local existe
-        if (!is_dir($carpetaLocal)) {
-            echo "La carpeta local no existe: $carpetaLocal\n";
-            return;
-        }
+        // Inicializar cURL
+        $ch = curl_init();
+        $uploadUrl = rtrim($url, '/') . '/remote.php/dav/files/' . $usuario . '/' . ltrim($rutaRemota, '/');
 
-        // Crear la carpeta remota en el servidor
-        self::crearDirectorioNextcloud($url, $usuario, $contraseña, $rutaRemota);
+        curl_setopt($ch, CURLOPT_URL, $uploadUrl);
+        curl_setopt($ch, CURLOPT_USERPWD, "$usuario:$contraseña");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PROPFIND');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-        // Iterar sobre los archivos en la carpeta local
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($carpetaLocal));
-        foreach ($iterator as $archivo) {
-            // Ignorar directorios
-            if ($archivo->isDir()) {
-                continue;
-            }
+        $response = curl_exec($ch);
+        $existencia = strpos($response, '<d:response') !== false; // Verificar la respuesta
 
-            // Construir la ruta remota
-            $rutaRemotaCompleta = $rutaRemota . '/' . str_replace($carpetaLocal . '/', '', $archivo->getPathname());
-            var_dump($rutaRemotaCompleta . "<br>" . dirname($rutaRemotaCompleta));
-            // Crear el directorio en la ruta remota si no existe
-            //self::crearDirectorioNextcloud($url, $usuario, $contraseña, dirname($rutaRemotaCompleta));
-            // Subir el archivo al servidor WebDAV
-            //self::subirArchivoNextcloud($url, $usuario, $contraseña, $archivo->getPathname(), $rutaRemotaCompleta);
-        }
-        die();
+        curl_close($ch);
+        return $existencia;
     }
 
-    private static function crearDirectorioNextcloud($url, $usuario, $contraseña, $rutaRemota)
+    public static function crearDirectorioNextcloud($url, $usuario, $contraseña, $rutaRemota)
     {
         // Inicializar cURL para crear el directorio
         $ch = curl_init();
@@ -225,13 +397,6 @@ class Helpers
 
         // Ejecutar la solicitud cURL
         $response = curl_exec($ch);
-
-        if ($response === false && curl_errno($ch) != 405) { // 405: método no permitido
-            echo 'Error al crear el directorio: ' . curl_error($ch) . "\n";
-        } else {
-            echo "Directorio creado o ya existe: $rutaRemota\n";
-        }
-
         curl_close($ch);
     }
 
